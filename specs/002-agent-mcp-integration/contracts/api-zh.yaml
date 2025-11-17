@@ -1,0 +1,556 @@
+openapi: 3.0.3
+info:
+  title: 代理MCP集成API
+  version: 1.0.0
+  description: 代理MCP集成功能的API合约
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: 开发服务器
+
+paths:
+  /agents:
+    post:
+      summary: 创建支持MCP集成的新代理
+      operationId: createAgent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentConfig'
+      responses:
+        '201':
+          description: 代理创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '400':
+          description: 无效的代理配置
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 已存在同名代理
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agents/{agentName}:
+    get:
+      summary: 获取代理配置
+      operationId: getAgent
+      parameters:
+        - name: agentName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 代理配置获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentConfig'
+        '404':
+          description: 代理未找到
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: 更新代理配置
+      operationId: updateAgent
+      parameters:
+        - name: agentName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentConfig'
+      responses:
+        '200':
+          description: 代理更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '400':
+          description: 无效的代理配置
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 代理未找到
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: 删除代理
+      operationId: deleteAgent
+      parameters:
+        - name: agentName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 代理删除成功
+        '404':
+          description: 代理未找到
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agents/{agentName}/execute:
+    post:
+      summary: 执行支持MCP集成的代理
+      operationId: executeAgent
+      parameters:
+        - name: agentName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionRequest'
+      responses:
+        '200':
+          description: 代理执行完成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionResponse'
+        '400':
+          description: 无效的执行请求
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 代理未找到
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: MCP服务不可用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mcp/services:
+    get:
+      summary: 列出MCP服务
+      operationId: listMCPServices
+      responses:
+        '200':
+          description: MCP服务获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServiceList'
+
+    post:
+      summary: 注册MCP服务
+      operationId: registerMCPService
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPServiceRegistration'
+      responses:
+        '201':
+          description: MCP服务注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPService'
+        '400':
+          description: 无效的服务注册
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 服务已注册
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mcp/services/{serviceId}:
+    get:
+      summary: 获取MCP服务详情
+      operationId: getMCPService
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: MCP服务详情获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPService'
+        '404':
+          description: MCP服务未找到
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: 注销MCP服务
+      operationId: unregisterMCPService
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: MCP服务注销成功
+        '404':
+          description: MCP服务未找到
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mcp/services/{serviceId}/health:
+    get:
+      summary: 检查MCP服务健康状态
+      operationId: checkMCPServiceHealth
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 服务健康状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '404':
+          description: MCP服务未找到
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    AgentConfig:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          description: 代理标识符
+        type:
+          type: string
+          enum: [LLM, CLI, DOCKER]
+          description: 代理执行类型
+        provider:
+          type: string
+          enum: [anthropic, openai, github]
+          description: LLM代理的AI提供商
+        model:
+          type: string
+          description: LLM代理的模型标识符
+        api_key:
+          type: string
+          description: API密钥（可以是环境变量引用）
+        max_tokens:
+          type: integer
+          minimum: 1
+          default: 4096
+          description: 每次请求的最大token数
+        temperature:
+          type: number
+          minimum: 0.0
+          maximum: 2.0
+          default: 0.7
+          description: 创造性参数
+        timeout_seconds:
+          type: integer
+          minimum: 10
+          maximum: 300
+          default: 60
+          description: 请求超时时间
+        max_retries:
+          type: integer
+          minimum: 0
+          default: 3
+          description: 最大重试次数
+        retry_delay:
+          type: number
+          minimum: 0.0
+          default: 1.0
+          description: 重试间隔秒数
+        command:
+          type: string
+          description: CLI代理的命令
+        working_directory:
+          type: string
+          description: CLI代理的工作目录
+        environment_variables:
+          type: object
+          additionalProperties:
+            type: string
+          description: CLI代理的环境变量
+        docker_image:
+          type: string
+          description: Docker代理的镜像
+        docker_command:
+          type: string
+          description: Docker容器中运行的命令
+        docker_environment:
+          type: object
+          additionalProperties:
+            type: string
+          description: Docker容器的环境变量
+        docker_volumes:
+          type: array
+          items:
+            type: string
+          description: Docker容器的卷挂载
+        mcp_address:
+          type: string
+          format: uri
+          description: MCP服务地址
+        mcp_timeout:
+          type: integer
+          minimum: 1
+          default: 30
+          description: MCP连接超时秒数
+        mcp_retry_attempts:
+          type: integer
+          minimum: 0
+          default: 3
+          description: MCP连接重试次数
+        enable_mcp_tools:
+          type: boolean
+          default: true
+          description: 启用MCP工具集成
+
+    AgentResponse:
+      type: object
+      properties:
+        agent:
+          $ref: '#/components/schemas/AgentConfig'
+        created_at:
+          type: string
+          format: date-time
+          description: 代理创建时间戳
+        status:
+          type: string
+          enum: [active, inactive]
+          description: 代理状态
+
+    ExecutionRequest:
+      type: object
+      required:
+        - task
+      properties:
+        task:
+          type: string
+          description: 代理执行的任务描述
+        parameters:
+          type: object
+          additionalProperties: true
+          description: 额外的执行参数
+        mcp_tools:
+          type: array
+          items:
+            type: string
+          description: 为此次执行启用的特定MCP工具
+
+    ExecutionResponse:
+      type: object
+      properties:
+        result:
+          type: string
+          description: 执行结果
+        mcp_tools_used:
+          type: array
+          items:
+            type: string
+          description: 执行期间使用的MCP工具
+        execution_time:
+          type: number
+          description: 执行时间（秒）
+        status:
+          type: string
+          enum: [success, error, timeout]
+          description: 执行状态
+
+    MCPService:
+      type: object
+      required:
+        - service_id
+        - address
+        - status
+        - created_at
+        - config
+      properties:
+        service_id:
+          type: string
+          description: 唯一的服务标识符
+        address:
+          type: string
+          format: uri
+          description: 服务端点URL
+        status:
+          type: string
+          enum: [CREATED, STARTING, RUNNING, STOPPING, STOPPED, ERROR, RECOVERING]
+          description: 当前服务状态
+        created_at:
+          type: string
+          format: date-time
+          description: 服务创建时间戳
+        last_health_check:
+          type: string
+          format: date-time
+          description: 最后健康检查时间戳
+        health_status:
+          type: boolean
+          description: 当前健康状态
+        config:
+          $ref: '#/components/schemas/MCPServiceConfig'
+
+    MCPServiceConfig:
+      type: object
+      properties:
+        max_connections:
+          type: integer
+          minimum: 1
+          default: 10
+          description: 最大连接池大小
+        connection_timeout:
+          type: integer
+          minimum: 1
+          default: 30
+          description: 连接超时秒数
+        health_check_interval:
+          type: integer
+          minimum: 1
+          default: 60
+          description: 健康检查间隔秒数
+        retry_attempts:
+          type: integer
+          minimum: 0
+          default: 3
+          description: 连接重试次数
+        retry_delay:
+          type: number
+          minimum: 0.0
+          default: 1.0
+          description: 重试间隔
+        enable_circuit_breaker:
+          type: boolean
+          default: true
+          description: 启用断路器模式
+        circuit_breaker_threshold:
+          type: integer
+          minimum: 1
+          default: 5
+          description: 断路器故障阈值
+
+    MCPServiceRegistration:
+      type: object
+      required:
+        - address
+      properties:
+        service_id:
+          type: string
+          description: 可选的自定义服务标识符
+        address:
+          type: string
+          format: uri
+          description: 服务端点URL
+        config:
+          $ref: '#/components/schemas/MCPServiceConfig'
+
+    MCPServiceList:
+      type: object
+      properties:
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/MCPService'
+        total_count:
+          type: integer
+          description: 服务总数
+
+    HealthStatus:
+      type: object
+      properties:
+        service_id:
+          type: string
+          description: 服务标识符
+        healthy:
+          type: boolean
+          description: 健康状态
+        last_check:
+          type: string
+          format: date-time
+          description: 最后健康检查时间戳
+        response_time:
+          type: number
+          description: 响应时间（秒）
+        error_message:
+          type: string
+          description: 不健康时的错误消息
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: 错误类型
+        message:
+          type: string
+          description: 人类可读的错误消息
+        details:
+          type: object
+          additionalProperties: true
+          description: 额外的错误详情
+        timestamp:
+          type: string
+          format: date-time
+          description: 错误时间戳

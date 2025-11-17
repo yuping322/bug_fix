@@ -1,0 +1,556 @@
+openapi: 3.0.3
+info:
+  title: Agent MCP Integration API
+  version: 1.0.0
+  description: API contracts for Agent MCP Integration feature
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+paths:
+  /agents:
+    post:
+      summary: Create a new agent with MCP integration
+      operationId: createAgent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentConfig'
+      responses:
+        '201':
+          description: Agent created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '400':
+          description: Invalid agent configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Agent with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agents/{agentName}:
+    get:
+      summary: Get agent configuration
+      operationId: getAgent
+      parameters:
+        - name: agentName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent configuration retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentConfig'
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update agent configuration
+      operationId: updateAgent
+      parameters:
+        - name: agentName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentConfig'
+      responses:
+        '200':
+          description: Agent updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '400':
+          description: Invalid agent configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete agent
+      operationId: deleteAgent
+      parameters:
+        - name: agentName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Agent deleted successfully
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agents/{agentName}/execute:
+    post:
+      summary: Execute agent with MCP integration
+      operationId: executeAgent
+      parameters:
+        - name: agentName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecutionRequest'
+      responses:
+        '200':
+          description: Agent execution completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionResponse'
+        '400':
+          description: Invalid execution request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: MCP service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mcp/services:
+    get:
+      summary: List MCP services
+      operationId: listMCPServices
+      responses:
+        '200':
+          description: MCP services retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPServiceList'
+
+    post:
+      summary: Register MCP service
+      operationId: registerMCPService
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPServiceRegistration'
+      responses:
+        '201':
+          description: MCP service registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPService'
+        '400':
+          description: Invalid service registration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Service already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mcp/services/{serviceId}:
+    get:
+      summary: Get MCP service details
+      operationId: getMCPService
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: MCP service details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPService'
+        '404':
+          description: MCP service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Unregister MCP service
+      operationId: unregisterMCPService
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: MCP service unregistered
+        '404':
+          description: MCP service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mcp/services/{serviceId}/health:
+    get:
+      summary: Check MCP service health
+      operationId: checkMCPServiceHealth
+      parameters:
+        - name: serviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '404':
+          description: MCP service not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    AgentConfig:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          description: Agent identifier
+        type:
+          type: string
+          enum: [LLM, CLI, DOCKER]
+          description: Agent execution type
+        provider:
+          type: string
+          enum: [anthropic, openai, github]
+          description: AI provider for LLM agents
+        model:
+          type: string
+          description: Model identifier for LLM agents
+        api_key:
+          type: string
+          description: API key (can be env var reference)
+        max_tokens:
+          type: integer
+          minimum: 1
+          default: 4096
+          description: Maximum tokens per request
+        temperature:
+          type: number
+          minimum: 0.0
+          maximum: 2.0
+          default: 0.7
+          description: Creativity parameter
+        timeout_seconds:
+          type: integer
+          minimum: 10
+          maximum: 300
+          default: 60
+          description: Request timeout
+        max_retries:
+          type: integer
+          minimum: 0
+          default: 3
+          description: Maximum retry attempts
+        retry_delay:
+          type: number
+          minimum: 0.0
+          default: 1.0
+          description: Delay between retries in seconds
+        command:
+          type: string
+          description: Command for CLI agents
+        working_directory:
+          type: string
+          description: Working directory for CLI agents
+        environment_variables:
+          type: object
+          additionalProperties:
+            type: string
+          description: Environment variables for CLI agents
+        docker_image:
+          type: string
+          description: Docker image for Docker agents
+        docker_command:
+          type: string
+          description: Command to run in Docker container
+        docker_environment:
+          type: object
+          additionalProperties:
+            type: string
+          description: Environment variables for Docker containers
+        docker_volumes:
+          type: array
+          items:
+            type: string
+          description: Volume mounts for Docker containers
+        mcp_address:
+          type: string
+          format: uri
+          description: MCP service address
+        mcp_timeout:
+          type: integer
+          minimum: 1
+          default: 30
+          description: MCP connection timeout in seconds
+        mcp_retry_attempts:
+          type: integer
+          minimum: 0
+          default: 3
+          description: MCP connection retry attempts
+        enable_mcp_tools:
+          type: boolean
+          default: true
+          description: Enable MCP tool integration
+
+    AgentResponse:
+      type: object
+      properties:
+        agent:
+          $ref: '#/components/schemas/AgentConfig'
+        created_at:
+          type: string
+          format: date-time
+          description: Agent creation timestamp
+        status:
+          type: string
+          enum: [active, inactive]
+          description: Agent status
+
+    ExecutionRequest:
+      type: object
+      required:
+        - task
+      properties:
+        task:
+          type: string
+          description: Task description for agent execution
+        parameters:
+          type: object
+          additionalProperties: true
+          description: Additional execution parameters
+        mcp_tools:
+          type: array
+          items:
+            type: string
+          description: Specific MCP tools to enable for this execution
+
+    ExecutionResponse:
+      type: object
+      properties:
+        result:
+          type: string
+          description: Execution result
+        mcp_tools_used:
+          type: array
+          items:
+            type: string
+          description: MCP tools that were used during execution
+        execution_time:
+          type: number
+          description: Execution time in seconds
+        status:
+          type: string
+          enum: [success, error, timeout]
+          description: Execution status
+
+    MCPService:
+      type: object
+      required:
+        - service_id
+        - address
+        - status
+        - created_at
+        - config
+      properties:
+        service_id:
+          type: string
+          description: Unique service identifier
+        address:
+          type: string
+          format: uri
+          description: Service endpoint URL
+        status:
+          type: string
+          enum: [CREATED, STARTING, RUNNING, STOPPING, STOPPED, ERROR, RECOVERING]
+          description: Current service status
+        created_at:
+          type: string
+          format: date-time
+          description: Service creation timestamp
+        last_health_check:
+          type: string
+          format: date-time
+          description: Last health check timestamp
+        health_status:
+          type: boolean
+          description: Current health status
+        config:
+          $ref: '#/components/schemas/MCPServiceConfig'
+
+    MCPServiceConfig:
+      type: object
+      properties:
+        max_connections:
+          type: integer
+          minimum: 1
+          default: 10
+          description: Maximum connection pool size
+        connection_timeout:
+          type: integer
+          minimum: 1
+          default: 30
+          description: Connection timeout in seconds
+        health_check_interval:
+          type: integer
+          minimum: 1
+          default: 60
+          description: Health check interval in seconds
+        retry_attempts:
+          type: integer
+          minimum: 0
+          default: 3
+          description: Connection retry attempts
+        retry_delay:
+          type: number
+          minimum: 0.0
+          default: 1.0
+          description: Delay between retries
+        enable_circuit_breaker:
+          type: boolean
+          default: true
+          description: Enable circuit breaker pattern
+        circuit_breaker_threshold:
+          type: integer
+          minimum: 1
+          default: 5
+          description: Failure threshold for circuit breaker
+
+    MCPServiceRegistration:
+      type: object
+      required:
+        - address
+      properties:
+        service_id:
+          type: string
+          description: Optional custom service identifier
+        address:
+          type: string
+          format: uri
+          description: Service endpoint URL
+        config:
+          $ref: '#/components/schemas/MCPServiceConfig'
+
+    MCPServiceList:
+      type: object
+      properties:
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/MCPService'
+        total_count:
+          type: integer
+          description: Total number of services
+
+    HealthStatus:
+      type: object
+      properties:
+        service_id:
+          type: string
+          description: Service identifier
+        healthy:
+          type: boolean
+          description: Health status
+        last_check:
+          type: string
+          format: date-time
+          description: Last health check timestamp
+        response_time:
+          type: number
+          description: Response time in seconds
+        error_message:
+          type: string
+          description: Error message if unhealthy
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp

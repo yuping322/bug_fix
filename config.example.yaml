@@ -1,0 +1,112 @@
+# Agent Orchestration Platform Configuration
+# This is an example configuration file. Copy this to config.yaml and customize as needed.
+
+version: "1.0"
+environment: "development"
+
+# Agent configurations
+agents:
+  claude:
+    name: "claude"
+    provider: "anthropic"
+    model: "claude-3-sonnet-20240229"
+    api_key: "${ANTHROPIC_API_KEY}"  # Set via environment variable
+    max_tokens: 4096
+    temperature: 0.7
+    timeout: 60
+    retry_attempts: 3
+    retry_delay: 1.0
+
+  gpt4:
+    name: "gpt4"
+    provider: "openai"
+    model: "gpt-4"
+    api_key: "${OPENAI_API_KEY}"  # Set via environment variable
+    max_tokens: 4096
+    temperature: 0.7
+    timeout: 60
+    retry_attempts: 3
+    retry_delay: 1.0
+
+  copilot:
+    name: "copilot"
+    provider: "copilot"
+    model: "gpt-4"
+    api_key: "${GITHUB_TOKEN}"  # GitHub Copilot token
+    max_tokens: 4096
+    temperature: 0.7
+    timeout: 60
+    retry_attempts: 3
+    retry_delay: 1.0
+
+# Workflow configurations
+workflows:
+  code-review:
+    name: "code-review"
+    description: "Automated code review workflow"
+    type: "simple"
+    agent: "claude"
+    timeout: 3600
+    max_retries: 3
+    parallel_execution: false
+    steps:
+      - name: "analyze"
+        action: "analyze_codebase"
+        parameters:
+          scope: "changed_files"
+      - name: "review"
+        action: "review_changes"
+        parameters:
+          focus: "security,best_practices,performance"
+      - name: "suggest"
+        action: "suggest_improvements"
+        parameters:
+          max_suggestions: 5
+
+  code-generation:
+    name: "code-generation"
+    description: "Code generation and implementation workflow"
+    type: "langgraph"
+    agent: "claude"
+    timeout: 7200
+    max_retries: 2
+    parallel_execution: true
+    steps:
+      - name: "plan"
+        action: "create_implementation_plan"
+      - name: "implement"
+        action: "generate_code"
+      - name: "test"
+        action: "generate_tests"
+      - name: "validate"
+        action: "run_tests"
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "console"  # Use "json" for production
+  file: "logs/agent-orchestration.log"  # Optional log file
+  max_file_size: "10 MB"
+  backup_count: 5
+
+# Security configuration
+security:
+  encryption_key: "${ENCRYPTION_KEY}"  # For encrypting sensitive data
+  credential_store: "local"  # Options: local, vault, aws_secrets
+  token_expiry: 3600
+
+# API server configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+  reload: false  # Set to true in development
+
+# Model Context Protocol configuration
+mcp:
+  enabled: false
+  server_url: "http://localhost:3000"
+  tools:
+    - "git"
+    - "docker"
+    - "filesystem"

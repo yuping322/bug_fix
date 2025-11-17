@@ -1,0 +1,618 @@
+openapi: 3.0.3
+info:
+  title: 多智能体代码开发编排平台 API
+  description: 用于在代码开发工作流中编排 AI 智能体的 REST API
+  version: 1.0.0
+  contact:
+    name: API 支持
+    email: support@agent-orchestration.local
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: 本地开发服务器
+  - url: https://api.agent-orchestration.com/v1
+    description: 生产服务器
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: 健康检查端点
+      description: 返回平台及其组件的健康状态
+      operationId: getHealth
+      tags:
+        - Health
+      responses:
+        '200':
+          description: 平台健康
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: 平台不健康
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /agents:
+    get:
+      summary: 列出注册的智能体
+      description: 返回具有状态的所有注册 AI 智能体的列表
+      operationId: listAgents
+      tags:
+        - Agents
+      responses:
+        '200':
+          description: 智能体列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Agent'
+                  total:
+                    type: integer
+                    minimum: 0
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: 注册新智能体
+      description: 在平台中注册新的 AI 智能体
+      operationId: registerAgent
+      tags:
+        - Agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentRegistration'
+      responses:
+        '201':
+          description: 智能体注册成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          description: 智能体配置无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 智能体已存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agents/{agentId}:
+    get:
+      summary: 获取智能体详情
+      description: 返回特定智能体的详细信息
+      operationId: getAgent
+      tags:
+        - Agents
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 智能体的唯一标识符
+      responses:
+        '200':
+          description: 智能体详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '404':
+          description: 未找到智能体
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: 更新智能体配置
+      description: 更新现有智能体的配置
+      operationId: updateAgent
+      tags:
+        - Agents
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 智能体的唯一标识符
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentUpdate'
+      responses:
+        '200':
+          description: 智能体更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          description: 智能体配置无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到智能体
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: 注销智能体
+      description: 从平台中移除智能体
+      operationId: unregisterAgent
+      tags:
+        - Agents
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 智能体的唯一标识符
+      responses:
+        '204':
+          description: 智能体注销成功
+        '404':
+          description: 未找到智能体
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /workflows:
+    get:
+      summary: 列出可用工作流
+      description: 返回所有可用工作流模板的列表
+      operationId: listWorkflows
+      tags:
+        - Workflows
+      responses:
+        '200':
+          description: 工作流列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workflows:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WorkflowSummary'
+                  total:
+                    type: integer
+                    minimum: 0
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: 执行工作流
+      description: 使用提供的参数执行工作流
+      operationId: executeWorkflow
+      tags:
+        - Workflows
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowExecutionRequest'
+      responses:
+        '202':
+          description: 工作流执行已启动
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowExecutionResponse'
+        '400':
+          description: 工作流请求无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未找到工作流
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /workflows/{workflowId}/executions/{executionId}:
+    get:
+      summary: 获取工作流执行状态
+      description: 返回工作流执行的当前状态和进度
+      operationId: getWorkflowExecution
+      tags:
+        - Workflows
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 工作流的唯一标识符
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 执行的唯一标识符
+      responses:
+        '200':
+          description: 执行状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowExecutionStatus'
+        '404':
+          description: 未找到执行
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /workflows/{workflowId}/executions/{executionId}/logs:
+    get:
+      summary: 获取工作流执行日志
+      description: 返回特定工作流运行的执行日志
+      operationId: getWorkflowExecutionLogs
+      tags:
+        - Workflows
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 工作流的唯一标识符
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 执行的唯一标识符
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [DEBUG, INFO, WARNING, ERROR]
+          description: 按级别过滤日志
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: 要返回的最大日志条目数
+      responses:
+        '200':
+          description: 执行日志
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LogEntry'
+                  total:
+                    type: integer
+                    minimum: 0
+        '404':
+          description: 未找到执行
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+        components:
+          type: object
+          properties:
+            agents:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, unhealthy]
+                message:
+                  type: string
+            workflows:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, unhealthy]
+                message:
+                  type: string
+            database:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, unhealthy]
+                message:
+                  type: string
+
+    Agent:
+      type: object
+      required:
+        - id
+        - name
+        - provider
+        - model
+        - capabilities
+        - status
+      properties:
+        id:
+          type: string
+          description: 智能体的唯一标识符
+        name:
+          type: string
+          description: 人类可读名称
+        provider:
+          type: string
+          enum: [anthropic, openai, github]
+          description: AI 提供商名称
+        model:
+          type: string
+          description: 模型标识符
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: 支持能力的列表
+        status:
+          type: string
+          enum: [active, inactive, error]
+          description: 当前运营状态
+        config:
+          type: object
+          description: 提供商特定配置
+        lastHealthCheck:
+          type: string
+          format: date-time
+          description: 最后健康检查的时间戳
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AgentRegistration:
+      type: object
+      required:
+        - id
+        - provider
+        - model
+        - config
+      properties:
+        id:
+          type: string
+          description: 智能体的唯一标识符
+        name:
+          type: string
+          description: 人类可读名称
+        provider:
+          type: string
+          enum: [anthropic, openai, github]
+        model:
+          type: string
+        config:
+          type: object
+          description: 提供商特定配置包括 API 密钥
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: 支持能力的列表
+
+    AgentUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        config:
+          type: object
+        capabilities:
+          type: array
+          items:
+            type: string
+
+    WorkflowSummary:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - type
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [simple, langgraph]
+        tags:
+          type: array
+          items:
+            type: string
+
+    WorkflowExecutionRequest:
+      type: object
+      required:
+        - workflowId
+      properties:
+        workflowId:
+          type: string
+          description: 要执行的工作流的 ID
+        parameters:
+          type: object
+          description: 工作流特定参数
+        workspaceDir:
+          type: string
+          description: 执行的工作目录
+        timeoutSeconds:
+          type: integer
+          minimum: 10
+          maximum: 3600
+          default: 300
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+
+    WorkflowExecutionResponse:
+      type: object
+      required:
+        - executionId
+        - status
+      properties:
+        executionId:
+          type: string
+          description: 此执行的唯一标识符
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        estimatedDuration:
+          type: integer
+          description: 预计完成时间（秒）
+        message:
+          type: string
+
+    WorkflowExecutionStatus:
+      type: object
+      required:
+        - executionId
+        - status
+        - progress
+      properties:
+        executionId:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        progress:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 完成百分比（0.0 到 1.0）
+        currentStep:
+          type: string
+          description: 当前执行的步骤名称
+        startTime:
+          type: string
+          format: date-time
+        estimatedCompletion:
+          type: string
+          format: date-time
+        results:
+          type: object
+          description: 部分或完整执行结果
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+            details:
+              type: object
+
+    LogEntry:
+      type: object
+      required:
+        - timestamp
+        - level
+        - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+          enum: [DEBUG, INFO, WARNING, ERROR]
+        message:
+          type: string
+        stepId:
+          type: string
+        metadata:
+          type: object
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+            timestamp:
+              type: string
+              format: date-time
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

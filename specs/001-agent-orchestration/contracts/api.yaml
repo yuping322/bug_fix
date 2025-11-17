@@ -1,0 +1,618 @@
+openapi: 3.0.3
+info:
+  title: Multi-Agent Code Development Orchestration Platform API
+  description: REST API for orchestrating AI agents in code development workflows
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@agent-orchestration.local
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+  - url: https://api.agent-orchestration.com/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the platform and its components
+      operationId: getHealth
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Platform is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Platform is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /agents:
+    get:
+      summary: List registered agents
+      description: Returns a list of all registered AI agents with their status
+      operationId: listAgents
+      tags:
+        - Agents
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Agent'
+                  total:
+                    type: integer
+                    minimum: 0
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Register a new agent
+      description: Register a new AI agent with the platform
+      operationId: registerAgent
+      tags:
+        - Agents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentRegistration'
+      responses:
+        '201':
+          description: Agent registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          description: Invalid agent configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Agent already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agents/{agentId}:
+    get:
+      summary: Get agent details
+      description: Returns detailed information about a specific agent
+      operationId: getAgent
+      tags:
+        - Agents
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the agent
+      responses:
+        '200':
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Update agent configuration
+      description: Update the configuration of an existing agent
+      operationId: updateAgent
+      tags:
+        - Agents
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentUpdate'
+      responses:
+        '200':
+          description: Agent updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agent'
+        '400':
+          description: Invalid agent configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Unregister agent
+      description: Remove an agent from the platform
+      operationId: unregisterAgent
+      tags:
+        - Agents
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the agent
+      responses:
+        '204':
+          description: Agent unregistered successfully
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /workflows:
+    get:
+      summary: List available workflows
+      description: Returns a list of all available workflow templates
+      operationId: listWorkflows
+      tags:
+        - Workflows
+      responses:
+        '200':
+          description: List of workflows
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workflows:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WorkflowSummary'
+                  total:
+                    type: integer
+                    minimum: 0
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Execute workflow
+      description: Execute a workflow with the provided parameters
+      operationId: executeWorkflow
+      tags:
+        - Workflows
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowExecutionRequest'
+      responses:
+        '202':
+          description: Workflow execution started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowExecutionResponse'
+        '400':
+          description: Invalid workflow request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Workflow not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /workflows/{workflowId}/executions/{executionId}:
+    get:
+      summary: Get workflow execution status
+      description: Returns the current status and progress of a workflow execution
+      operationId: getWorkflowExecution
+      tags:
+        - Workflows
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the workflow
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the execution
+      responses:
+        '200':
+          description: Execution status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowExecutionStatus'
+        '404':
+          description: Execution not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /workflows/{workflowId}/executions/{executionId}/logs:
+    get:
+      summary: Get workflow execution logs
+      description: Returns the execution logs for a specific workflow run
+      operationId: getWorkflowExecutionLogs
+      tags:
+        - Workflows
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the workflow
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier of the execution
+        - name: level
+          in: query
+          schema:
+            type: string
+            enum: [DEBUG, INFO, WARNING, ERROR]
+          description: Filter logs by level
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum number of log entries to return
+      responses:
+        '200':
+          description: Execution logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LogEntry'
+                  total:
+                    type: integer
+                    minimum: 0
+        '404':
+          description: Execution not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+        components:
+          type: object
+          properties:
+            agents:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, unhealthy]
+                message:
+                  type: string
+            workflows:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, unhealthy]
+                message:
+                  type: string
+            database:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [healthy, unhealthy]
+                message:
+                  type: string
+
+    Agent:
+      type: object
+      required:
+        - id
+        - name
+        - provider
+        - model
+        - capabilities
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the agent
+        name:
+          type: string
+          description: Human-readable name
+        provider:
+          type: string
+          enum: [anthropic, openai, github]
+          description: AI provider name
+        model:
+          type: string
+          description: Model identifier
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: List of supported capabilities
+        status:
+          type: string
+          enum: [active, inactive, error]
+          description: Current operational status
+        config:
+          type: object
+          description: Provider-specific configuration
+        lastHealthCheck:
+          type: string
+          format: date-time
+          description: Timestamp of last health check
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AgentRegistration:
+      type: object
+      required:
+        - id
+        - provider
+        - model
+        - config
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the agent
+        name:
+          type: string
+          description: Human-readable name
+        provider:
+          type: string
+          enum: [anthropic, openai, github]
+        model:
+          type: string
+        config:
+          type: object
+          description: Provider-specific configuration including API keys
+        capabilities:
+          type: array
+          items:
+            type: string
+          description: List of supported capabilities
+
+    AgentUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        config:
+          type: object
+        capabilities:
+          type: array
+          items:
+            type: string
+
+    WorkflowSummary:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - type
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [simple, langgraph]
+        tags:
+          type: array
+          items:
+            type: string
+
+    WorkflowExecutionRequest:
+      type: object
+      required:
+        - workflowId
+      properties:
+        workflowId:
+          type: string
+          description: ID of the workflow to execute
+        parameters:
+          type: object
+          description: Workflow-specific parameters
+        workspaceDir:
+          type: string
+          description: Working directory for execution
+        timeoutSeconds:
+          type: integer
+          minimum: 10
+          maximum: 3600
+          default: 300
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+
+    WorkflowExecutionResponse:
+      type: object
+      required:
+        - executionId
+        - status
+      properties:
+        executionId:
+          type: string
+          description: Unique identifier for this execution
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        estimatedDuration:
+          type: integer
+          description: Estimated completion time in seconds
+        message:
+          type: string
+
+    WorkflowExecutionStatus:
+      type: object
+      required:
+        - executionId
+        - status
+        - progress
+      properties:
+        executionId:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        progress:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Completion percentage (0.0 to 1.0)
+        currentStep:
+          type: string
+          description: Currently executing step name
+        startTime:
+          type: string
+          format: date-time
+        estimatedCompletion:
+          type: string
+          format: date-time
+        results:
+          type: object
+          description: Partial or complete execution results
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+            details:
+              type: object
+
+    LogEntry:
+      type: object
+      required:
+        - timestamp
+        - level
+        - message
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+          enum: [DEBUG, INFO, WARNING, ERROR]
+        message:
+          type: string
+        stepId:
+          type: string
+        metadata:
+          type: object
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+            timestamp:
+              type: string
+              format: date-time
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

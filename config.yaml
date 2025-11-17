@@ -1,0 +1,98 @@
+# Agent Orchestration Platform Configuration
+
+version: "1.0.0"
+
+global:
+  workspace_dir: "."
+  log_level: "INFO"
+  max_concurrent_workflows: 5
+  timeout_seconds: 300
+  enable_metrics: true
+  enable_tracing: true
+
+agents:
+  claude:
+    name: "claude"
+    provider: "anthropic"
+    model: "claude-3-sonnet-20240229"
+    api_key: "${ANTHROPIC_API_KEY}"
+    max_tokens: 4096
+    temperature: 0.7
+    timeout_seconds: 60
+    enabled: true
+    metadata: {}
+
+  gpt4:
+    name: "gpt4"
+    provider: "openai"
+    model: "gpt-4"
+    api_key: "${OPENAI_API_KEY}"
+    max_tokens: 4096
+    temperature: 0.7
+    timeout_seconds: 60
+    enabled: true
+    metadata: {}
+
+  copilot:
+    name: "copilot"
+    provider: "github"
+    model: "copilot"
+    api_key: "${GITHUB_TOKEN}"
+    max_tokens: 4096
+    temperature: 0.7
+    timeout_seconds: 60
+    enabled: true
+    metadata: {}
+
+workflows:
+  code-review:
+    name: "code-review"
+    type: "simple"
+    description: "Automated code review workflow"
+    agents: ["claude"]
+    steps:
+      - name: "analyze"
+        agent: "claude"
+        prompt: "Analyze the codebase for issues"
+        inputs: {}
+        output: "analysis"
+        timeout: 300
+        retry: 0
+        dependencies: []
+    config: {}
+    enabled: true
+    metadata: {}
+
+  code-generation:
+    name: "code-generation"
+    type: "simple"
+    description: "Code generation workflow"
+    agents: ["claude"]
+    steps:
+      - name: "generate"
+        agent: "claude"
+        prompt: "Generate code based on requirements"
+        inputs: {}
+        output: "code"
+        timeout: 300
+        retry: 0
+        dependencies: []
+    config: {}
+    enabled: true
+    metadata: {}
+
+observability:
+  log_level: "INFO"
+  log_file: null
+  metrics_enabled: true
+  metrics_port: 9090
+  tracing_enabled: true
+  tracing_endpoint: null
+
+deployment:
+  docker_enabled: true
+  docker_registry: null
+  kubernetes_enabled: false
+  kubernetes_namespace: "default"
+  function_compute_enabled: false
+  function_compute_region: "us-east-1"
